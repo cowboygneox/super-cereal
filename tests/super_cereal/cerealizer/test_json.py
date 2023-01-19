@@ -6,7 +6,7 @@ import pytest
 from super_cereal.cerealizer.json import JsonCerealizer
 
 
-@pytest.mark.parametrize('obj', ['stuff', 42, 12.552, True])
+@pytest.mark.parametrize('obj', ['stuff', 42, 12.552, True], ids=[str, int, float, bool])
 def test_serializer_primatives(obj: any):
     cerealizer = JsonCerealizer()
     serialized = cerealizer.serialize(obj)
