@@ -51,13 +51,15 @@ def test_serializer_complex_object():
     class TestClass:
         field1: str
         field2: Optional[List[AnotherClass]]
+        field3: Optional[List[AnotherClass]]
 
     cerealizer = JsonCerealizer()
-    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)])
+    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None)
     serialized = cerealizer.serialize(obj)
     assert serialized == {
         'field1': 'stuff',
-        'field2': [{'field': 42}, {'field': 27}]
+        'field2': [{'field': 42}, {'field': 27}],
+        'field3': None
     }
     deserialized = cerealizer.deserialize(serialized, TestClass)
     assert obj == deserialized
