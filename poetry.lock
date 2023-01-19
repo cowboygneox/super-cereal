@@ -111,6 +111,19 @@ tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
+name = "sourcery-cli"
+version = "1.0.3"
+description = "Magically refactor Python"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sourcery_cli-1.0.3-py2.py3-none-macosx_10_9_universal2.whl", hash = "sha256:4e6fa17d5b73868c6357acb80360b815974791c33875b22208a90cf6d7d4efd9"},
+    {file = "sourcery_cli-1.0.3-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:896e4cd115699e1bdf260c0402fe94b9d6894aef7ab5b77ec11811565e477df2"},
+    {file = "sourcery_cli-1.0.3-py2.py3-none-win_amd64.whl", hash = "sha256:d99e76088c800c57ff2bd5e3a8572440010082116c009aba3806718dafeb2c0b"},
+]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -125,4 +138,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "8bfca625801852c02f936101030d9fa4c7bbe21afffeb186276786009d199c96"
+content-hash = "4b29eb082dde92f1dfbca78dd144a5e47838d4eff1d60beed25f56eb23a171c2"

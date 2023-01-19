@@ -12,6 +12,7 @@ python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
+sourcery-cli = "^1.0.3"
 
 [build-system]
 requires = ["poetry-core"]
