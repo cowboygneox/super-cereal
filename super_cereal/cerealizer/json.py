@@ -2,7 +2,7 @@ import inspect
 import typing
 from typing import List, Tuple
 
-from super_cereal.cerealizer import Cerealizer, T
+from super_cereal.cerealizer import Cerealizer, T, SerializationException, DeserializationException
 
 JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
 
@@ -28,6 +28,12 @@ class JsonCerealizer(Cerealizer[T, JsonTypes]):
             fields: List[Tuple[str, inspect.Parameter]] = list(
                 inspect.signature(type(obj).__init__).parameters.items())[1:]
 
+            for field, param in fields:
+                # noinspection PyUnresolvedReferences,PyProtectedMember
+                if param.annotation == inspect._empty:
+                    class_name = f'"{expected_type.__module__}.{expected_type.__name__}"'
+                    raise SerializationException(f'{class_name}: "{field}" has no annotation.')
+
             return {field: _serialize(getattr(obj, field), param.annotation) for field, param in fields}
 
         return _serialize(obj, type(obj))
@@ -50,6 +56,12 @@ class JsonCerealizer(Cerealizer[T, JsonTypes]):
 
         # noinspection PyTypeChecker
         fields: List[Tuple[str, inspect.Parameter]] = list(inspect.signature(t.__init__).parameters.items())[1:]
+
+        for field, param in fields:
+            # noinspection PyUnresolvedReferences,PyProtectedMember
+            if param.annotation == inspect._empty:
+                class_name = f'"{t.__module__}.{t.__name__}"'
+                raise DeserializationException(f'{class_name}: "{field}" has no annotation.')
 
         fixed = {
             field: self.deserialize(obj[field], param.annotation)

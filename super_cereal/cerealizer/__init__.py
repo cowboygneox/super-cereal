@@ -5,6 +5,14 @@ T = TypeVar('T')
 V = TypeVar('V')
 
 
+class SerializationException(Exception):
+    pass
+
+
+class DeserializationException(Exception):
+    pass
+
+
 class Cerealizer(abc.ABC, Generic[T, V]):  # pragma: no cover
     @abc.abstractmethod
     def serialize(self, obj: T) -> V:
