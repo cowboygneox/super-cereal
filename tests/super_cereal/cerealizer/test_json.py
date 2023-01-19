@@ -27,9 +27,18 @@ def test_serializer_simple_object():
 
     cerealizer = JsonCerealizer()
     obj = TestClass('stuff', 42, 12.552, True, ['1', '2', '3'], 'another', None)
+
     serialized = cerealizer.serialize(obj)
-    deserialized = cerealizer.deserialize(serialized, TestClass)
-    assert obj == deserialized
+    assert serialized == {
+        'field1': 'stuff',
+        'field2': 42,
+        'field3': 12.552,
+        'field4': True,
+        'field6': ['1', '2', '3'],
+        'field7': 'another',
+        'field8': None
+    }
+    assert obj == cerealizer.deserialize(serialized, TestClass)
 
 
 def test_serializer_complex_object():
@@ -45,5 +54,28 @@ def test_serializer_complex_object():
     cerealizer = JsonCerealizer()
     obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)])
     serialized = cerealizer.serialize(obj)
+    assert serialized == {
+        'field1': 'stuff',
+        'field2': [{'field': 42}, {'field': 27}]
+    }
     deserialized = cerealizer.deserialize(serialized, TestClass)
     assert obj == deserialized
+
+
+def test_wrong_type():
+    @dataclasses.dataclass
+    class TestClass:
+        field1: str
+        field2: str
+
+    cerealizer = JsonCerealizer()
+    # noinspection PyTypeChecker
+    obj = TestClass(42, 'stuff')
+    serialized = cerealizer.serialize(obj)
+    assert serialized == {'field1': '42', 'field2': 'stuff'}
+    
+    deserialize = cerealizer.deserialize(serialized, TestClass)
+    assert obj != deserialize
+
+    obj.field1 = '42'
+    assert obj == deserialize
