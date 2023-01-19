@@ -4,9 +4,11 @@ from typing import List, Tuple
 
 from super_cereal.cerealizer import Cerealizer, T
 
+JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
 
-class JsonCerealizer(Cerealizer[T, typing.Union[str, float, int, bool, type(None), dict]]):
-    def serialize(self, obj: T) -> typing.Union[str, float, int, bool, type(None), dict]:
+
+class JsonCerealizer(Cerealizer[T, JsonTypes]):
+    def serialize(self, obj: T) -> JsonTypes:
         if type(obj) in [str, float, int, bool, type(None)]:
             return obj
         if type(obj) in [list]:
@@ -17,7 +19,7 @@ class JsonCerealizer(Cerealizer[T, typing.Union[str, float, int, bool, type(None
 
         return {field: self.serialize(getattr(obj, field)) for field, param in fields}
 
-    def deserialize(self, obj: typing.Union[str, float, int, bool, type(None), dict], t: T) -> T:
+    def deserialize(self, obj: JsonTypes, t: T) -> T:
         if t in [str, float, int, bool, type(None)]:
             return obj
         if typing.get_origin(t) in [list]:
