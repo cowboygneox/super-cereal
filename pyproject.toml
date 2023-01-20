@@ -1,11 +1,14 @@
 [tool.poetry]
 name = "simple-serialization"
 version = "0.1.0"
-description = ""
+description = "Serialize Python objects"
 authors = ["Sean Freitag <sean.freitag@avant.com>"]
+maintainers = ["Sean Freitag <sean.freitag@avant.com>"]
 readme = "README.md"
 license = "Apache-2.0"
 packages = [{ include = "super_cereal" }]
+repository = "https://github.com/cowboygneox/super-cereal"
+keywords = ["serialization", "deserialization", "json"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
