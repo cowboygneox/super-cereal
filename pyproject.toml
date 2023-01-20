@@ -4,7 +4,8 @@ version = "0.1.0"
 description = ""
 authors = ["Sean Freitag <sean.freitag@avant.com>"]
 readme = "README.md"
-#packages = [{ include = "simple_serialization" }]
+license = "Apache-2.0"
+packages = [{ include = "super_cereal" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
