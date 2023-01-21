@@ -8,35 +8,35 @@ JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
 
 
 class JsonCerealizer(Cerealizer[T, JsonTypes]):
-    def serialize(self, obj: T) -> JsonTypes:
-        def _serialize(obj: T, expected_type: type):
-            if expected_type in [type(None)]:
-                return None
-            if expected_type in [str, float, int, bool]:
-                return expected_type(obj)
-            if typing.get_origin(expected_type) in [list]:
-                t = typing.get_args(expected_type)[0]
-                return [_serialize(v, t) for v in obj]
-            if typing.get_origin(expected_type) in [typing.Union]:
-                for t in typing.get_args(expected_type):
-                    if type(obj) == t:
-                        return _serialize(obj, t)
-                    if type(obj) == typing.get_origin(t):
-                        return _serialize(obj, t)
+    def serialize(self, obj: any, expected_type: T = None) -> JsonTypes:
+        if expected_type is None:
+            expected_type = type(obj)
 
-            # noinspection PyTypeChecker
-            fields: List[Tuple[str, inspect.Parameter]] = list(
-                inspect.signature(type(obj).__init__).parameters.items())[1:]
+        if expected_type in [type(None)]:
+            return None
+        if expected_type in [str, float, int, bool]:
+            return expected_type(obj)
+        if typing.get_origin(expected_type) in [list]:
+            t = typing.get_args(expected_type)[0]
+            return [self.serialize(v, t) for v in obj]
+        if typing.get_origin(expected_type) in [typing.Union]:
+            for t in typing.get_args(expected_type):
+                if type(obj) == t:
+                    return self.serialize(obj, t)
+                if type(obj) == typing.get_origin(t):
+                    return self.serialize(obj, t)
 
-            for field, param in fields:
-                # noinspection PyUnresolvedReferences,PyProtectedMember
-                if param.annotation == inspect._empty:
-                    class_name = f'"{expected_type.__module__}.{expected_type.__name__}"'
-                    raise SerializationException(f'{class_name}: "{field}" has no annotation.')
+        # noinspection PyTypeChecker
+        fields: List[Tuple[str, inspect.Parameter]] = list(
+            inspect.signature(expected_type.__init__).parameters.items())[1:]
 
-            return {field: _serialize(getattr(obj, field), param.annotation) for field, param in fields}
+        for field, param in fields:
+            # noinspection PyUnresolvedReferences,PyProtectedMember
+            if param.annotation == inspect._empty:
+                class_name = f'"{expected_type.__module__}.{expected_type.__name__}"'
+                raise SerializationException(f'{class_name}: "{field}" has no annotation.')
 
-        return _serialize(obj, type(obj))
+        return {field: self.serialize(getattr(obj, field), param.annotation) for field, param in fields}
 
     def deserialize(self, obj: JsonTypes, t: T) -> T:
         if t in [type(None)]:

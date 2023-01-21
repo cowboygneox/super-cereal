@@ -1,3 +1,4 @@
+import contextlib
 import dataclasses
 from typing import Optional, List
 
@@ -128,7 +129,7 @@ def test_vague_annotations():
         cerealizer.serialize(obj)
         assert False
     except SerializationException as e:
-        msg = '"builtins.any": "args" has no annotation.'
+        msg = '"builtins.any": "kwargs" has no annotation.'
         assert str(e) == msg
     except Exception:
         assert False
@@ -143,3 +144,51 @@ def test_vague_annotations():
         assert str(e) == msg
     except Exception:
         assert False
+
+
+def test_class_inheritance():
+    @dataclasses.dataclass
+    class SuperClass:
+        super_field: str
+
+    @dataclasses.dataclass
+    class SubClass(SuperClass):
+        sub_field: str
+
+    obj = SubClass(super_field='super', sub_field='sub')
+
+    cerealizer = JsonCerealizer()
+
+    serialized = cerealizer.serialize(obj, SuperClass)
+    assert serialized == {'super_field': 'super'}
+
+    deserialized = cerealizer.deserialize(serialized, SuperClass)
+    assert deserialized == SuperClass('super')
+
+    # Once serialized to a different object, it cannot go back to what it once was
+    with contextlib.suppress(KeyError):
+        cerealizer.deserialize(serialized, SubClass)
+        assert False
+
+
+def test_duck_typing():
+    @dataclasses.dataclass
+    class BrotherClass:
+        name: str
+
+    @dataclasses.dataclass
+    class SisterClass:
+        name: str
+
+    obj = BrotherClass('Bryce')
+
+    cerealizer = JsonCerealizer()
+
+    serialized = cerealizer.serialize(obj, SisterClass)
+    assert serialized == {'name': 'Bryce'}
+
+    deserialized = cerealizer.deserialize(serialized, SisterClass)
+    assert deserialized == SisterClass('Bryce')
+
+    deserialized = cerealizer.deserialize(serialized, BrotherClass)
+    assert deserialized == BrotherClass('Bryce')

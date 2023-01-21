@@ -15,7 +15,7 @@ class DeserializationException(Exception):
 
 class Cerealizer(abc.ABC, Generic[T, V]):  # pragma: no cover
     @abc.abstractmethod
-    def serialize(self, obj: T) -> V:
+    def serialize(self, obj: any, t: T = None) -> V:
         pass
 
     @abc.abstractmethod
