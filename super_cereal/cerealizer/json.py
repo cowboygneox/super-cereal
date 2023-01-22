@@ -2,70 +2,42 @@ import inspect
 import typing
 from typing import List, Tuple
 
-from super_cereal.cerealizer import Cerealizer, T, SerializationException, DeserializationException
+from super_cereal.cerealizer import Cerealizer, T, DeserializationException, TheTypeRegistry
+from super_cereal.cerealizer.builtins import PassthruCerealizer, ListCerealizer, UnionCerealizer, DictCerealizer
 
 JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
 
 
 class JsonCerealizer(Cerealizer[T, JsonTypes]):
+    def __init__(self):
+        registry = TheTypeRegistry()
+        registry[type(None)] = PassthruCerealizer()
+        registry[str] = PassthruCerealizer()
+        registry[float] = PassthruCerealizer()
+        registry[int] = PassthruCerealizer()
+        registry[bool] = PassthruCerealizer()
+        registry[list] = ListCerealizer()
+        registry[typing.List] = ListCerealizer()
+        registry[typing.Union] = UnionCerealizer()
+        registry.default = DictCerealizer()
+
+        self.registry = registry
+
     def serialize(self, obj: any, expected_type: T = None) -> JsonTypes:
         if expected_type is None:
             expected_type = type(obj)
 
-        if expected_type in [type(None)]:
-            return None
-        if expected_type in [str, float, int, bool]:
-            return expected_type(obj)
-        if typing.get_origin(expected_type) in [list]:
-            t = typing.get_args(expected_type)[0]
-            return [self.serialize(v, t) for v in obj]
-        if typing.get_origin(expected_type) in [typing.Union]:
-            for t in typing.get_args(expected_type):
-                if type(obj) == t:
-                    return self.serialize(obj, t)
-                if type(obj) == typing.get_origin(t):
-                    return self.serialize(obj, t)
+        if expected_type in self.registry:
+            return self.registry[expected_type].serialize(obj, expected_type)
+        if typing.get_origin(expected_type) in self.registry:
+            return self.registry[typing.get_origin(expected_type)].serialize(obj, expected_type)
 
-        # noinspection PyTypeChecker
-        fields: List[Tuple[str, inspect.Parameter]] = list(
-            inspect.signature(expected_type.__init__).parameters.items())[1:]
-
-        for field, param in fields:
-            # noinspection PyUnresolvedReferences,PyProtectedMember
-            if param.annotation == inspect._empty:
-                class_name = f'"{expected_type.__module__}.{expected_type.__name__}"'
-                raise SerializationException(f'{class_name}: "{field}" has no annotation.')
-
-        return {field: self.serialize(getattr(obj, field), param.annotation) for field, param in fields}
+        return self.registry.default.serialize(obj, expected_type)
 
     def deserialize(self, obj: JsonTypes, t: T) -> T:
-        if t in [type(None)]:
-            return None
-        if t in [str, float, int, bool]:
-            return t(obj)
-        if typing.get_origin(t) in [list]:
-            return [self.deserialize(v, typing.get_args(t)[0]) for v in obj]
+        if t in self.registry:
+            return self.registry[t].deserialize(obj, t)
+        if typing.get_origin(t) in self.registry:
+            return self.registry[typing.get_origin(t)].deserialize(obj, t)
 
-        if typing.get_origin(t) == typing.Union:
-            args = typing.get_args(t)
-            for arg in args:
-                if arg == type(obj):
-                    return self.deserialize(obj, arg)
-                if typing.get_origin(arg) == type(obj):
-                    return self.deserialize(obj, arg)
-
-        # noinspection PyTypeChecker
-        fields: List[Tuple[str, inspect.Parameter]] = list(inspect.signature(t.__init__).parameters.items())[1:]
-
-        for field, param in fields:
-            # noinspection PyUnresolvedReferences,PyProtectedMember
-            if param.annotation == inspect._empty:
-                class_name = f'"{t.__module__}.{t.__name__}"'
-                raise DeserializationException(f'{class_name}: "{field}" has no annotation.')
-
-        fixed = {
-            field: self.deserialize(obj[field], param.annotation)
-            for field, param in fields
-        }
-
-        return t(**fixed)
+        return self.registry.default.deserialize(obj, t)
