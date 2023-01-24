@@ -54,10 +54,13 @@ class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
         t = typing.get_args(t)[0]
 
         try:
-            cipher = AES.new(self.keys[obj['key_id']], AES.MODE_GCM, nonce=base64.b64decode(obj['nonce']))
-            plaintext = cipher.decrypt_and_verify(base64.b64decode(obj['value']), base64.b64decode(obj['tag']))
-
-            payload = json.loads(plaintext)
-            return Encrypted(key_id=obj['key_id'], value=self.value_cerealizer.deserialize(payload, t))
+            key_id = self.keys[obj['key_id']]
         except KeyError:
             return Encrypted(obj['key_id'], None)
+
+        cipher = AES.new(key_id, AES.MODE_GCM, nonce=base64.b64decode(obj['nonce']))
+        plaintext = cipher.decrypt_and_verify(base64.b64decode(obj['value']), base64.b64decode(obj['tag']))
+
+
+        payload = json.loads(plaintext)
+        return Encrypted(key_id=obj['key_id'], value=self.value_cerealizer.deserialize(payload, t))
