@@ -1,8 +1,6 @@
-import inspect
 import typing
-from typing import List, Tuple
 
-from super_cereal.cerealizer import Cerealizer, T, DeserializationException, TheTypeRegistry
+from super_cereal.cerealizer import Cerealizer, T, TheTypeRegistry
 from super_cereal.cerealizer.builtins import PassthruCerealizer, ListCerealizer, UnionCerealizer, DictCerealizer
 
 JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
