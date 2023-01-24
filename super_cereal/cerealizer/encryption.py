@@ -11,8 +11,13 @@ E = TypeVar('E')
 
 @dataclasses.dataclass
 class Encrypted(Generic[E]):
+    """
+    Container class for automatically encrypting during serialization and decrypting during deserialization.
+
+    `value` will be None when initially set as None, or when the encryption key for `key_id` is not present.
+    """
     key_id: str
-    value: T
+    value: typing.Optional[E]
 
 
 class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
@@ -25,9 +30,6 @@ class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
     def serialize(self, obj: Encrypted[E], t: T = None) -> Dict[str, E]:
         """
         https://pycryptodome.readthedocs.io/en/latest/src/cipher/modern.html?highlight=gcm#gcm-mode
-        :param obj:
-        :param t:
-        :return:
         """
         from Crypto.Cipher import AES
 
@@ -51,8 +53,11 @@ class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
 
         t = typing.get_args(t)[0]
 
-        cipher = AES.new(self.keys[obj['key_id']], AES.MODE_GCM, nonce=base64.b64decode(obj['nonce']))
-        plaintext = cipher.decrypt_and_verify(base64.b64decode(obj['value']), base64.b64decode(obj['tag']))
+        try:
+            cipher = AES.new(self.keys[obj['key_id']], AES.MODE_GCM, nonce=base64.b64decode(obj['nonce']))
+            plaintext = cipher.decrypt_and_verify(base64.b64decode(obj['value']), base64.b64decode(obj['tag']))
 
-        payload = json.loads(plaintext)
-        return Encrypted(key_id=obj['key_id'], value=self.value_cerealizer.deserialize(payload, t))
+            payload = json.loads(plaintext)
+            return Encrypted(key_id=obj['key_id'], value=self.value_cerealizer.deserialize(payload, t))
+        except KeyError:
+            return Encrypted(obj['key_id'], None)
