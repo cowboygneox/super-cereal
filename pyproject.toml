@@ -12,10 +12,10 @@ keywords = ["serialization", "deserialization", "json"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-cryptography = { version = "^39.0.0", optional = true }
+pycryptodome = {version = "^3.16.0", optional = true}
 
 [tool.poetry.extras]
-encryption = ["cryptography"]
+encryption = ["pycryptodome"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"

@@ -1,6 +1,7 @@
 import dataclasses
 
 import pytest
+from Crypto.Random import get_random_bytes
 
 from super_cereal.cerealizer.encryption import EncryptedCerealizer, Encrypted
 from super_cereal.cerealizer.json import JsonCerealizer
@@ -13,7 +14,7 @@ def test_simple_serialization(obj: any):
         value=obj
     )
 
-    key = b'6YPPnFEgjAoF-NFmtATGP9wNU0KGnqW2Lm9YP_FLm3s='
+    key = get_random_bytes(16)
 
     cerealizer = EncryptedCerealizer({'the_key': key}, JsonCerealizer())
 
@@ -32,7 +33,7 @@ def test_object_serialization():
         value=TestClass('bogus', 3322)
     )
 
-    key = b'6YPPnFEgjAoF-NFmtATGP9wNU0KGnqW2Lm9YP_FLm3s='
+    key = get_random_bytes(16)
 
     cerealizer = EncryptedCerealizer({'the_key': key}, JsonCerealizer())
 
@@ -48,16 +49,19 @@ def test_serializes_encrypted_object():
     @dataclasses.dataclass
     class TestClass:
         field1: str
-        field2: Secret
+        field2: Encrypted[Secret]
 
     obj = TestClass(
         field1='some_thing',
-        field2=Secret(
+        field2=Encrypted(
+            key_id='the_key',
+            value=Secret(
                 secret='the secret'
             )
+        )
     )
 
-    key = b'6YPPnFEgjAoF-NFmtATGP9wNU0KGnqW2Lm9YP_FLm3s='
+    key = get_random_bytes(16)
 
     json_cerealizer = JsonCerealizer()
     json_cerealizer.registry[Encrypted] = EncryptedCerealizer({'the_key': key}, json_cerealizer)

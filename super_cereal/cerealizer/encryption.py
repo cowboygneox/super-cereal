@@ -23,25 +23,36 @@ class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
         self.value_cerealizer = value_cerealizer
 
     def serialize(self, obj: Encrypted[E], t: T = None) -> Dict[str, E]:
-        from cryptography.fernet import Fernet
-        f = Fernet(self.keys[obj.key_id])
+        """
+        https://pycryptodome.readthedocs.io/en/latest/src/cipher/modern.html?highlight=gcm#gcm-mode
+        :param obj:
+        :param t:
+        :return:
+        """
+        from Crypto.Cipher import AES
 
         if t:
             t = typing.get_args(obj)
         if not t:
             t = type(obj.value)
 
+        cipher = AES.new(self.keys[obj.key_id], AES.MODE_GCM)
+        ciphertext, tag = cipher.encrypt_and_digest(json.dumps(self.value_cerealizer.serialize(obj.value, t)).encode())
+
         return {
             'key_id': obj.key_id,
-            'value': base64.b64encode(f.encrypt(json.dumps(self.value_cerealizer.serialize(obj.value, t)).encode())).decode()
+            'value': base64.b64encode(ciphertext).decode(),
+            'tag': base64.b64encode(tag).decode(),
+            'nonce': base64.b64encode(cipher.nonce).decode()
         }
 
     def deserialize(self, obj: Dict[str, E], t: Encrypted[E]) -> Encrypted[E]:
-        from cryptography.fernet import Fernet
-        f = Fernet(self.keys[obj['key_id']])
+        from Crypto.Cipher import AES
 
         t = typing.get_args(t)[0]
 
-        decrypted = f.decrypt(base64.b64decode(obj['value'])).decode()
-        payload = json.loads(decrypted)
+        cipher = AES.new(self.keys[obj['key_id']], AES.MODE_GCM, nonce=base64.b64decode(obj['nonce']))
+        plaintext = cipher.decrypt_and_verify(base64.b64decode(obj['value']), base64.b64decode(obj['tag']))
+
+        payload = json.loads(plaintext)
         return Encrypted(key_id=obj['key_id'], value=self.value_cerealizer.deserialize(payload, t))
