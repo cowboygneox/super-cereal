@@ -27,56 +27,61 @@ class AvroCerealizer(Cerealizer):
 
     @staticmethod
     def get_schema(record: type) -> Dict[str, any]:
-        if record in BUILTIN_ALIASES:
-            return {'type': BUILTIN_ALIASES[record]}
-        if record == list or get_origin(record) == list:
-            arg = get_args(record)[0]
-            if arg in BUILTIN_ALIASES:
-                return {'type': 'array', 'items': BUILTIN_ALIASES[arg]}
-            return {'type': 'array', 'items': AvroCerealizer.get_schema(arg)}
-        if Union == get_origin(record):
-            args = get_args(record)
+        def get_schema(t: type, namespace: str) -> Dict[str, any]:
+            if t in BUILTIN_ALIASES:
+                return {'type': BUILTIN_ALIASES[t]}
+            if t == list or get_origin(t) == list:
+                arg = get_args(t)[0]
+                if arg in BUILTIN_ALIASES:
+                    return {'type': 'array', 'items': BUILTIN_ALIASES[arg]}
+                return {'type': 'array', 'items': get_schema(arg, namespace)}
+            if Union == get_origin(t):
+                args = get_args(t)
 
-            def type_for_arg(a):
-                if a in BUILTIN_ALIASES:
-                    return BUILTIN_ALIASES[a]
-                return AvroCerealizer.get_schema(a)
+                def type_for_arg(a):
+                    if a in BUILTIN_ALIASES:
+                        return BUILTIN_ALIASES[a]
+                    return get_schema(a, namespace)
 
-            return {'type': [type_for_arg(z) for z in args]}
-        if Encrypted == get_origin(record):
+                return {'type': [type_for_arg(z) for z in args]}
+            if Encrypted == get_origin(t):
+                print('stuff')
+                return {
+                    'namespace': namespace,
+                    'type': 'record',
+                    'name': get_origin(t).__name__,
+                    'fields': [
+                        {'name': 'key_id', 'type': 'string'},
+                        {'name': 'value',
+                         'type': [get_schema(get_args(t)[0], f'{namespace}.{get_origin(t).__name__}.value'), 'string']},
+                        {'name': 'tag', 'type': 'string'},
+                        {'name': 'nonce', 'type': 'string'},
+                    ]
+                }
+
+            # noinspection PyTypeChecker
+            fields: List[Tuple[str, inspect.Parameter]] = list(inspect.signature(t.__init__).parameters.items())[1:]
+
+            f = []
+
+            for field in fields:
+                def should_simplify(tp):
+                    return tp in BUILTIN_ALIASES or Union == get_origin(tp)
+
+                schema = get_schema(field[1].annotation, namespace=f'{namespace}.{t.__name__}.{field[0]}')
+                f.append({
+                    'name': field[0],
+                    'type': schema['type'] if should_simplify(field[1].annotation) else schema
+                })
+
             return {
-                'namespace': 'avant.messaging.serialization',
+                'namespace': f'{inspect.getmodule(t).__name__}{namespace}',
                 'type': 'record',
-                'name': 'Encrypted',
-                'fields': [
-                    {'name': 'key_id', 'type': 'string'},
-                    {'name': 'value', 'type': [AvroCerealizer.get_schema(get_args(record)[0]), 'string']},
-                    {'name': 'tag', 'type': 'string'},
-                    {'name': 'nonce', 'type': 'string'},
-                ]
+                'name': t.__name__,
+                'fields': f
             }
 
-        # noinspection PyTypeChecker
-        fields: List[Tuple[str, inspect.Parameter]] = list(inspect.signature(record.__init__).parameters.items())[1:]
-
-        f = []
-
-        for field in fields:
-            def should_simplify(t):
-                return t in BUILTIN_ALIASES or Union == get_origin(t)
-
-            schema = AvroCerealizer.get_schema(field[1].annotation)
-            f.append({
-                'name': field[0],
-                'type': schema['type'] if should_simplify(field[1].annotation) else schema
-            })
-
-        return {
-            'namespace': inspect.getmodule(record).__name__,
-            'type': 'record',
-            'name': record.__name__,
-            'fields': f
-        }
+        return get_schema(record, inspect.getmodule(record).__name__)
 
     def serialize(self, obj: any, t: T = None) -> V:
         import avro.schema

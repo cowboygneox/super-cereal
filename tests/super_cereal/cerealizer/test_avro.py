@@ -64,20 +64,35 @@ def test_complex_obj():
 
 def test_encrypted_obj():
     @dataclasses.dataclass
-    class Secret:
+    class SuperSecret:
         secret: str
+
+    @dataclasses.dataclass
+    class Secret:
+        secret: Encrypted[SuperSecret]
 
     @dataclasses.dataclass
     class TestClass:
         field1: str
         field2: Encrypted[Secret]
+        field3: Encrypted[SuperSecret]
 
     key = get_random_bytes(16)
 
     cerealizer = AvroCerealizer()
     encrypted_cerealizer = EncryptedCerealizer({'key1': key}, cerealizer.json_serializer)
     cerealizer.json_serializer.registry[Encrypted] = encrypted_cerealizer
-    obj = TestClass('stuff', Encrypted('key1', Secret('the secret')))
+    obj = TestClass(
+        'stuff',
+        Encrypted(
+            'key1',
+            Secret(Encrypted('key1', SuperSecret('the secret')))
+        ),
+        Encrypted(
+            'key1',
+            SuperSecret('another secret')
+        )
+    )
 
     serialized = cerealizer.serialize(obj)
     deserialized = cerealizer.deserialize(serialized, TestClass)
