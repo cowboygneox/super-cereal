@@ -39,9 +39,7 @@ class AvroCerealizer(Cerealizer):
                 args = get_args(t)
 
                 def type_for_arg(a):
-                    if a in BUILTIN_ALIASES:
-                        return BUILTIN_ALIASES[a]
-                    return get_schema(a, namespace)
+                    return BUILTIN_ALIASES[a] if a in BUILTIN_ALIASES else get_schema(a, namespace)
 
                 return {'type': [type_for_arg(z) for z in args]}
             if Encrypted == get_origin(t):
