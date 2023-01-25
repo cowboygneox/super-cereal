@@ -2,8 +2,10 @@ import dataclasses
 from typing import Optional, List
 
 import pytest
+from Crypto.Random import get_random_bytes
 
 from super_cereal.cerealizer.avro import AvroCerealizer
+from super_cereal.cerealizer.encryption import Encrypted, EncryptedCerealizer
 
 
 @pytest.mark.parametrize('obj', ['stuff', 42, 12.552, True], ids=[str, int, float, bool])
@@ -54,6 +56,28 @@ def test_complex_obj():
 
     cerealizer = AvroCerealizer()
     obj = TestClass('stuff', AnotherClass(1), [AnotherClass2(2), AnotherClass2(3)], None)
+
+    serialized = cerealizer.serialize(obj)
+    deserialized = cerealizer.deserialize(serialized, TestClass)
+    assert obj == deserialized
+
+
+def test_encrypted_obj():
+    @dataclasses.dataclass
+    class Secret:
+        secret: str
+
+    @dataclasses.dataclass
+    class TestClass:
+        field1: str
+        field2: Encrypted[Secret]
+
+    key = get_random_bytes(16)
+
+    cerealizer = AvroCerealizer()
+    encrypted_cerealizer = EncryptedCerealizer({'key1': key}, cerealizer.json_serializer)
+    cerealizer.json_serializer.registry[Encrypted] = encrypted_cerealizer
+    obj = TestClass('stuff', Encrypted('key1', Secret('the secret')))
 
     serialized = cerealizer.serialize(obj)
     deserialized = cerealizer.deserialize(serialized, TestClass)

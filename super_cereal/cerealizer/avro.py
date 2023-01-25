@@ -29,28 +29,32 @@ class AvroCerealizer(Cerealizer):
     def get_schema(record: type) -> Dict[str, any]:
         if record in BUILTIN_ALIASES:
             return {'type': BUILTIN_ALIASES[record]}
+        if record == list or get_origin(record) == list:
+            arg = get_args(record)[0]
+            if arg in BUILTIN_ALIASES:
+                return {'type': 'array', 'items': BUILTIN_ALIASES[arg]}
+            return {'type': 'array', 'items': AvroCerealizer.get_schema(arg)}
+        if Union == get_origin(record):
+            args = get_args(record)
 
-        def get_field_name(t):
-            if t in BUILTIN_ALIASES:
-                return BUILTIN_ALIASES[t]
-            if t == list or get_origin(t) == list:
-                return {'type': 'array', 'items': get_field_name(get_args(t)[0])}
-            if Union == get_origin(t):
-                args = get_args(t)
-                return [get_field_name(z) for z in args]
-            if Encrypted == get_origin(t):
-                return {
-                    'namespace': 'avant.messaging.serialization',
-                    'type': 'record',
-                    'name': 'Encrypted',
-                    'fields': [
-                        {'name': 'key_id', 'type': 'string'},
-                        {'name': 'value', 'type': get_field_name(get_args(t)[0])},
-                    ]
-                }
+            def type_for_arg(a):
+                if a in BUILTIN_ALIASES:
+                    return BUILTIN_ALIASES[a]
+                return AvroCerealizer.get_schema(a)
 
-            # This is definitely not kosher. There needs to be a mechanism to verify this is a Record.
-            return AvroCerealizer.get_schema(t)
+            return {'type': [type_for_arg(z) for z in args]}
+        if Encrypted == get_origin(record):
+            return {
+                'namespace': 'avant.messaging.serialization',
+                'type': 'record',
+                'name': 'Encrypted',
+                'fields': [
+                    {'name': 'key_id', 'type': 'string'},
+                    {'name': 'value', 'type': [AvroCerealizer.get_schema(get_args(record)[0]), 'string']},
+                    {'name': 'tag', 'type': 'string'},
+                    {'name': 'nonce', 'type': 'string'},
+                ]
+            }
 
         # noinspection PyTypeChecker
         fields: List[Tuple[str, inspect.Parameter]] = list(inspect.signature(record.__init__).parameters.items())[1:]
@@ -58,9 +62,13 @@ class AvroCerealizer(Cerealizer):
         f = []
 
         for field in fields:
+            def should_simplify(t):
+                return t in BUILTIN_ALIASES or Union == get_origin(t)
+
+            schema = AvroCerealizer.get_schema(field[1].annotation)
             f.append({
                 'name': field[0],
-                'type': get_field_name(field[1].annotation)
+                'type': schema['type'] if should_simplify(field[1].annotation) else schema
             })
 
         return {
