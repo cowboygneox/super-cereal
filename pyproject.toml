@@ -13,9 +13,11 @@ keywords = ["serialization", "deserialization", "json"]
 [tool.poetry.dependencies]
 python = "^3.8"
 pycryptodome = {version = "^3.16.0", optional = true}
+avro = {version = "^1.11.1", optional = true}
 
 [tool.poetry.extras]
 encryption = ["pycryptodome"]
+avro = ["avro"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
