@@ -5,7 +5,7 @@ import pytest
 from Crypto.Random import get_random_bytes
 
 from super_cereal.cerealizer.avro import AvroCerealizer
-from super_cereal.cerealizer.encryption import Encrypted, EncryptedCerealizer
+from super_cereal.cerealizer.encryption import Encrypted
 
 
 @pytest.mark.parametrize('obj', ['stuff', 42, 12.552, True], ids=[str, int, float, bool])
@@ -79,9 +79,7 @@ def test_encrypted_obj():
 
     key = get_random_bytes(16)
 
-    cerealizer = AvroCerealizer()
-    encrypted_cerealizer = EncryptedCerealizer({'key1': key}, cerealizer.json_serializer)
-    cerealizer.json_serializer.registry[Encrypted] = encrypted_cerealizer
+    cerealizer = AvroCerealizer({'key1': key})
     obj = TestClass(
         'stuff',
         Encrypted(

@@ -34,6 +34,11 @@ class ITypeRegistry(Dict[type, ICerealizer], abc.ABC):
 
 
 class Cerealizer(ICerealizer[T, V], ABC):
+    def __init__(self, encryption_keys: Dict[str, bytes] = None):
+        if encryption_keys is None:
+            encryption_keys = {}
+        self.encryption_keys = encryption_keys
+
     def add_registry(self, registry: Optional[ITypeRegistry]):
         self.registry = registry
 

@@ -23,9 +23,16 @@ class Encrypted(Generic[E]):
 class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
 
     def __init__(self, keys: Dict[str, bytes], value_cerealizer: Cerealizer) -> None:
-        super().__init__()
-        self.keys = keys
+        super().__init__(keys)
         self.value_cerealizer = value_cerealizer
+
+    @staticmethod
+    def enabled() -> bool:
+        try:
+            from Crypto.Cipher import AES
+            return True
+        except ImportError:
+            return False
 
     def serialize(self, obj: Encrypted[E], t: T = None) -> Dict[str, E]:
         """
@@ -38,7 +45,7 @@ class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
         if not t:
             t = type(obj.value)
 
-        cipher = AES.new(self.keys[obj.key_id], AES.MODE_GCM)
+        cipher = AES.new(self.encryption_keys[obj.key_id], AES.MODE_GCM)
         ciphertext, tag = cipher.encrypt_and_digest(json.dumps(self.value_cerealizer.serialize(obj.value, t)).encode())
 
         return {
@@ -54,13 +61,12 @@ class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
         t = typing.get_args(t)[0]
 
         try:
-            key_id = self.keys[obj['key_id']]
+            key_id = self.encryption_keys[obj['key_id']]
         except KeyError:
             return Encrypted(obj['key_id'], None)
 
         cipher = AES.new(key_id, AES.MODE_GCM, nonce=base64.b64decode(obj['nonce']))
         plaintext = cipher.decrypt_and_verify(base64.b64decode(obj['value']), base64.b64decode(obj['tag']))
-
 
         payload = json.loads(plaintext)
         return Encrypted(key_id=obj['key_id'], value=self.value_cerealizer.deserialize(payload, t))

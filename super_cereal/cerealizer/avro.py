@@ -21,9 +21,9 @@ BUILTIN_ALIASES = {
 
 
 class AvroCerealizer(Cerealizer):
-    def __init__(self) -> None:
-        super().__init__()
-        self.json_serializer = JsonCerealizer()
+    def __init__(self, encryption_keys: Dict[str, bytes] = None) -> None:
+        super().__init__(encryption_keys)
+        self.json_serializer = JsonCerealizer(encryption_keys)
 
     @staticmethod
     def get_schema(record: type) -> Dict[str, any]:

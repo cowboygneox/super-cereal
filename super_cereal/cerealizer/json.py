@@ -2,12 +2,13 @@ import typing
 
 from super_cereal.cerealizer import Cerealizer, T, TheTypeRegistry
 from super_cereal.cerealizer.builtins import PassthruCerealizer, ListCerealizer, UnionCerealizer, DictCerealizer
+from super_cereal.cerealizer.encryption import EncryptedCerealizer, Encrypted
 
 JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
 
 
 class JsonCerealizer(Cerealizer[T, JsonTypes]):
-    def __init__(self):
+    def __init__(self, encryption_keys: typing.Dict[str, bytes] = None):
         registry = TheTypeRegistry()
         registry[type(None)] = PassthruCerealizer()
         registry[str] = PassthruCerealizer()
@@ -17,6 +18,10 @@ class JsonCerealizer(Cerealizer[T, JsonTypes]):
         registry[list] = ListCerealizer()
         registry[typing.List] = ListCerealizer()
         registry[typing.Union] = UnionCerealizer()
+
+        if EncryptedCerealizer.enabled():
+            registry[Encrypted] = EncryptedCerealizer(encryption_keys, self)
+
         registry.default = DictCerealizer()
 
         self.registry = registry

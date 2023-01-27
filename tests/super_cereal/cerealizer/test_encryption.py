@@ -3,7 +3,7 @@ import dataclasses
 import pytest
 from Crypto.Random import get_random_bytes
 
-from super_cereal.cerealizer.encryption import EncryptedCerealizer, Encrypted
+from super_cereal.cerealizer.encryption import Encrypted
 from super_cereal.cerealizer.json import JsonCerealizer
 
 
@@ -15,8 +15,7 @@ def test_simple_serialization(obj: any):
     )
 
     key = get_random_bytes(16)
-
-    cerealizer = EncryptedCerealizer({'the_key': key}, JsonCerealizer())
+    cerealizer = JsonCerealizer({'the_key': key})
 
     serialized = cerealizer.serialize(encryption)
     assert cerealizer.deserialize(serialized, Encrypted[type(obj)]) == encryption
@@ -34,8 +33,7 @@ def test_object_serialization():
     )
 
     key = get_random_bytes(16)
-
-    cerealizer = EncryptedCerealizer({'the_key': key}, JsonCerealizer())
+    cerealizer = JsonCerealizer({'the_key': key})
 
     serialized = cerealizer.serialize(encryption)
     assert cerealizer.deserialize(serialized, Encrypted[TestClass]) == encryption
@@ -62,9 +60,7 @@ def test_serializes_encrypted_object():
     )
 
     key = get_random_bytes(16)
-
-    json_cerealizer = JsonCerealizer()
-    json_cerealizer.registry[Encrypted] = EncryptedCerealizer({'the_key': key}, json_cerealizer)
+    json_cerealizer = JsonCerealizer({'the_key': key})
 
     serialized = json_cerealizer.serialize(obj, TestClass)
     assert json_cerealizer.deserialize(serialized, TestClass) == obj
@@ -92,12 +88,11 @@ def test_cannot_decrypt_object_due_to_missing_key():
 
     key = get_random_bytes(16)
 
-    json_cerealizer = JsonCerealizer()
-    json_cerealizer.registry[Encrypted] = EncryptedCerealizer({'the_key': key}, json_cerealizer)
+    cerealizer = JsonCerealizer({'the_key': key})
 
-    serialized = json_cerealizer.serialize(obj, TestClass)
+    serialized = cerealizer.serialize(obj, TestClass)
     serialized['field2']['key_id'] = 'bogus'
-    deserialized = json_cerealizer.deserialize(serialized, TestClass)
+    deserialized = cerealizer.deserialize(serialized, TestClass)
     obj.field2 = Encrypted('bogus', None)
     assert deserialized == obj
 
@@ -124,15 +119,13 @@ def test_cannot_decrypt_object_due_to_bad_key():
 
     key = get_random_bytes(16)
 
-    json_cerealizer = JsonCerealizer()
-    encrypted_cerealizer = EncryptedCerealizer({'the_key': key}, json_cerealizer)
-    json_cerealizer.registry[Encrypted] = encrypted_cerealizer
+    cerealizer = JsonCerealizer({'the_key': key})
 
-    serialized = json_cerealizer.serialize(obj, TestClass)
+    serialized = cerealizer.serialize(obj, TestClass)
 
-    encrypted_cerealizer.keys = {'the_key': get_random_bytes(16)}
+    cerealizer.registry[Encrypted].encryption_keys = {'the_key': get_random_bytes(16)}
     try:
-        json_cerealizer.deserialize(serialized, TestClass)
+        cerealizer.deserialize(serialized, TestClass)
         assert False
     except ValueError as e:
         assert str(e) == 'MAC check failed'
