@@ -1,7 +1,7 @@
 import contextlib
 import dataclasses
 import json
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import pytest
 
@@ -67,9 +67,13 @@ def test_serializer_bytes_simple_object():
         field6: List[str]
         field7: Optional[str]
         field8: Optional[str]
+        field9: Dict[str, str]
 
     cerealizer = JsonByteCerealizer()
-    obj = TestClass('stuff', 42, 12.552, True, ['1', '2', '3'], 'another', None)
+    d = dict(
+        key='value'
+    )
+    obj = TestClass('stuff', 42, 12.552, True, ['1', '2', '3'], 'another', None, d)
 
     serialized = cerealizer.serialize(obj)
     assert serialized == json.dumps({
@@ -79,7 +83,10 @@ def test_serializer_bytes_simple_object():
         'field4': True,
         'field6': ['1', '2', '3'],
         'field7': 'another',
-        'field8': None
+        'field8': None,
+        'field9': {
+            'key': 'value'
+        }
     }).encode()
     assert obj == cerealizer.deserialize(serialized, TestClass)
 
@@ -89,19 +96,33 @@ def test_serializer_complex_object():
     class AnotherClass:
         field: int
 
+        def __hash__(self):
+            return hash(self.field)
+
     @dataclasses.dataclass
     class TestClass:
         field1: str
         field2: Optional[List[AnotherClass]]
         field3: Optional[List[AnotherClass]]
+        field4: Dict[int, Dict[str, float]]
 
     cerealizer = JsonCerealizer()
-    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None)
+    d = {
+        2: {
+            'value': 222.55
+        }
+    }
+    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None, d)
     serialized = cerealizer.serialize(obj)
     assert serialized == {
         'field1': 'stuff',
         'field2': [{'field': 42}, {'field': 27}],
-        'field3': None
+        'field3': None,
+        'field4': {
+            2: {
+                'value': 222.55
+            }
+        }
     }
     deserialized = cerealizer.deserialize(serialized, TestClass)
     assert obj == deserialized

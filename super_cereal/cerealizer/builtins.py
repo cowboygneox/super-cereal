@@ -45,6 +45,9 @@ class UnionCerealizer(Cerealizer):
 
 class DictCerealizer(Cerealizer):
     def serialize(self, obj: any, t: T = None) -> V:
+        if t == dict or typing.get_origin(t) == dict:
+            return obj
+
         # noinspection PyTypeChecker
         fields: typing.List[typing.Tuple[str, inspect.Parameter]] = list(
             inspect.signature(t.__init__).parameters.items())[1:]
@@ -64,6 +67,9 @@ class DictCerealizer(Cerealizer):
         return fixed_fields
 
     def deserialize(self, obj: V, t: T) -> T:
+        if t == dict or typing.get_origin(t) == dict:
+            return obj
+
         # noinspection PyTypeChecker
         fields: typing.List[
             typing.Tuple[str, inspect.Parameter]] = list(inspect.signature(t.__init__).parameters.items())[1:]
