@@ -1,3 +1,4 @@
+import json
 import typing
 
 from super_cereal.cerealizer import Cerealizer, T, TheTypeRegistry
@@ -44,3 +45,15 @@ class JsonCerealizer(Cerealizer[T, JsonTypes]):
             return self.registry[typing.get_origin(t)].deserialize(obj, t)
 
         return self.registry.default.deserialize(obj, t)
+
+
+class JsonByteCerealizer(JsonCerealizer):
+
+    def __init__(self, encryption_keys: typing.Dict[str, bytes] = None):
+        super().__init__(encryption_keys)
+
+    def serialize(self, obj: any, expected_type: T = None) -> bytes:
+        return json.dumps(super().serialize(obj, expected_type)).encode()
+
+    def deserialize(self, obj: bytes, t: T) -> T:
+        return super().deserialize(json.loads(obj.decode()), t)

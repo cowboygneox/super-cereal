@@ -1,11 +1,12 @@
 import contextlib
 import dataclasses
+import json
 from typing import Optional, List
 
 import pytest
 
 from super_cereal.cerealizer import SerializationException, DeserializationException
-from super_cereal.cerealizer.json import JsonCerealizer
+from super_cereal.cerealizer.json import JsonCerealizer, JsonByteCerealizer
 
 
 @pytest.mark.parametrize('obj', ['stuff', 42, 12.552, True], ids=[str, int, float, bool])
@@ -13,6 +14,19 @@ def test_serializer_primatives(obj: any):
     cerealizer = JsonCerealizer()
     serialized = cerealizer.serialize(obj)
     assert serialized == obj
+    assert cerealizer.deserialize(serialized, type(obj)) == obj
+
+
+@pytest.mark.parametrize(('obj', 'expected_cerealized'), [
+    ('stuff', b'"stuff"'),
+    (42, b'42'),
+    (12.552, b'12.552'),
+    (True, b'true')
+], ids=[str, int, float, bool])
+def test_serializer_bytes_primatives(obj: any, expected_cerealized: any):
+    cerealizer = JsonByteCerealizer()
+    serialized = cerealizer.serialize(obj)
+    assert serialized == expected_cerealized
     assert cerealizer.deserialize(serialized, type(obj)) == obj
 
 
@@ -43,6 +57,33 @@ def test_serializer_simple_object():
     assert obj == cerealizer.deserialize(serialized, TestClass)
 
 
+def test_serializer_bytes_simple_object():
+    @dataclasses.dataclass
+    class TestClass:
+        field1: str
+        field2: int
+        field3: float
+        field4: bool
+        field6: List[str]
+        field7: Optional[str]
+        field8: Optional[str]
+
+    cerealizer = JsonByteCerealizer()
+    obj = TestClass('stuff', 42, 12.552, True, ['1', '2', '3'], 'another', None)
+
+    serialized = cerealizer.serialize(obj)
+    assert serialized == json.dumps({
+        'field1': 'stuff',
+        'field2': 42,
+        'field3': 12.552,
+        'field4': True,
+        'field6': ['1', '2', '3'],
+        'field7': 'another',
+        'field8': None
+    }).encode()
+    assert obj == cerealizer.deserialize(serialized, TestClass)
+
+
 def test_serializer_complex_object():
     @dataclasses.dataclass
     class AnotherClass:
@@ -62,6 +103,29 @@ def test_serializer_complex_object():
         'field2': [{'field': 42}, {'field': 27}],
         'field3': None
     }
+    deserialized = cerealizer.deserialize(serialized, TestClass)
+    assert obj == deserialized
+
+
+def test_serializer_bytes_complex_object():
+    @dataclasses.dataclass
+    class AnotherClass:
+        field: int
+
+    @dataclasses.dataclass
+    class TestClass:
+        field1: str
+        field2: Optional[List[AnotherClass]]
+        field3: Optional[List[AnotherClass]]
+
+    cerealizer = JsonByteCerealizer()
+    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None)
+    serialized = cerealizer.serialize(obj)
+    assert serialized == json.dumps({
+        'field1': 'stuff',
+        'field2': [{'field': 42}, {'field': 27}],
+        'field3': None
+    }).encode()
     deserialized = cerealizer.deserialize(serialized, TestClass)
     assert obj == deserialized
 
