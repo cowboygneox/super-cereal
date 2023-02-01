@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "super-cereal"
-version = "0.1.1"
+version = "0.1.3"
 description = "Serialize Python objects"
 authors = ["Sean Freitag <sean.freitag@avant.com>"]
 maintainers = ["Sean Freitag <sean.freitag@avant.com>"]
