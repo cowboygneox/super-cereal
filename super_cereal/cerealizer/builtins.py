@@ -12,6 +12,14 @@ class PassthruCerealizer(Cerealizer[any, any]):
         return None if obj is None else t(obj)
 
 
+class EnumCerealizer(Cerealizer):
+    def serialize(self, obj: any, t: T = None) -> V:
+        return obj.name
+
+    def deserialize(self, obj: V, t: T) -> T:
+        return t[obj]
+
+
 class ListCerealizer(Cerealizer):
     def serialize(self, obj: any, t: T = None) -> V:
         t = typing.get_args(t)[0]

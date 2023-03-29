@@ -1,6 +1,7 @@
 import inspect
 import io
 import json
+from enum import EnumMeta
 from typing import Union, get_origin, get_args, Dict, List, Tuple
 
 from avro.datafile import DataFileReader
@@ -35,6 +36,13 @@ class AvroCerealizer(Cerealizer):
                 if arg in BUILTIN_ALIASES:
                     return {'type': 'array', 'items': BUILTIN_ALIASES[arg]}
                 return {'type': 'array', 'items': get_schema(arg, namespace)}
+            if type(t) == EnumMeta:
+                # noinspection PyProtectedMember,PyUnresolvedReferences
+                return {
+                    "type": "enum",
+                    "name": t.__name__,
+                    "symbols":  t._member_names_
+                }
             if Union == get_origin(t):
                 args = get_args(t)
 

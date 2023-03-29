@@ -70,6 +70,8 @@ class TheTypeRegistry(ITypeRegistry):
             return self.d[item]
         if typing.get_origin(item) in self.d:
             return self.d[typing.get_origin(item)]
+        if type(item) in self.d:
+            return self.d[type(item)]
 
         return self.default
 

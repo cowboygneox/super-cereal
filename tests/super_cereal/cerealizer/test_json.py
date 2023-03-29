@@ -1,6 +1,7 @@
 import contextlib
 import dataclasses
 import json
+from enum import Enum
 from typing import Optional, List, Dict
 
 import pytest
@@ -92,6 +93,16 @@ def test_serializer_bytes_simple_object():
 
 
 def test_serializer_complex_object():
+    class Color(Enum):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    class ColorCode(Enum):
+        RED = "R"
+        GREEN = "G"
+        BLUE = "B"
+
     @dataclasses.dataclass
     class AnotherClass:
         field: int
@@ -105,6 +116,8 @@ def test_serializer_complex_object():
         field2: Optional[List[AnotherClass]]
         field3: Optional[List[AnotherClass]]
         field4: Dict[int, Dict[str, float]]
+        field5: Color
+        field6: ColorCode
 
     cerealizer = JsonCerealizer()
     d = {
@@ -112,7 +125,7 @@ def test_serializer_complex_object():
             'value': 222.55
         }
     }
-    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None, d)
+    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None, d, Color.BLUE, ColorCode.GREEN)
     serialized = cerealizer.serialize(obj)
     assert serialized == {
         'field1': 'stuff',
@@ -122,7 +135,9 @@ def test_serializer_complex_object():
             2: {
                 'value': 222.55
             }
-        }
+        },
+        'field5': 'BLUE',
+        'field6': 'GREEN'
     }
     deserialized = cerealizer.deserialize(serialized, TestClass)
     assert obj == deserialized

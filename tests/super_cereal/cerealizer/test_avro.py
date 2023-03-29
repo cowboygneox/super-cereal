@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import Optional, List
 
 import pytest
@@ -35,6 +36,11 @@ def test_simple_obj():
 
 
 def test_complex_obj():
+    class Color(Enum):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
     @dataclasses.dataclass
     class AnotherClass:
         field: int
@@ -53,9 +59,10 @@ def test_complex_obj():
         field2: AnotherClass
         field3: List[AnotherClass2]
         field4: Optional[List[AnotherClass3]]
+        field5: Color
 
     cerealizer = AvroCerealizer()
-    obj = TestClass('stuff', AnotherClass(1), [AnotherClass2(2), AnotherClass2(3)], None)
+    obj = TestClass('stuff', AnotherClass(1), [AnotherClass2(2), AnotherClass2(3)], None, Color.RED)
 
     serialized = cerealizer.serialize(obj)
     deserialized = cerealizer.deserialize(serialized, TestClass)

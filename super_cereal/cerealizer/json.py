@@ -1,8 +1,10 @@
 import json
 import typing
+from enum import EnumMeta
 
 from super_cereal.cerealizer import Cerealizer, T, TheTypeRegistry
-from super_cereal.cerealizer.builtins import PassthruCerealizer, ListCerealizer, UnionCerealizer, DictCerealizer
+from super_cereal.cerealizer.builtins import PassthruCerealizer, ListCerealizer, UnionCerealizer, DictCerealizer, \
+    EnumCerealizer
 from super_cereal.cerealizer.encryption import EncryptedCerealizer, Encrypted
 
 JsonTypes = typing.Union[str, float, int, bool, type(None), list, dict]
@@ -16,6 +18,7 @@ class JsonCerealizer(Cerealizer[T, JsonTypes]):
         registry[float] = PassthruCerealizer()
         registry[int] = PassthruCerealizer()
         registry[bool] = PassthruCerealizer()
+        registry[EnumMeta] = EnumCerealizer()
         registry[list] = ListCerealizer()
         registry[typing.List] = ListCerealizer()
         registry[typing.Union] = UnionCerealizer()
