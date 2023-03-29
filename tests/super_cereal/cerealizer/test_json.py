@@ -106,6 +106,7 @@ def test_serializer_complex_object():
     @dataclasses.dataclass
     class AnotherClass:
         field: int
+        color: ColorCode
 
         def __hash__(self):
             return hash(self.field)
@@ -117,7 +118,6 @@ def test_serializer_complex_object():
         field3: Optional[List[AnotherClass]]
         field4: Dict[int, Dict[str, float]]
         field5: Color
-        field6: ColorCode
 
     cerealizer = JsonCerealizer()
     d = {
@@ -125,11 +125,11 @@ def test_serializer_complex_object():
             'value': 222.55
         }
     }
-    obj = TestClass('stuff', [AnotherClass(42), AnotherClass(27)], None, d, Color.BLUE, ColorCode.GREEN)
+    obj = TestClass('stuff', [AnotherClass(42, ColorCode.RED), AnotherClass(27, ColorCode.GREEN)], None, d, Color.BLUE)
     serialized = cerealizer.serialize(obj)
     assert serialized == {
         'field1': 'stuff',
-        'field2': [{'field': 42}, {'field': 27}],
+        'field2': [{'field': 42, 'color': 'RED'}, {'field': 27, 'color': 'GREEN'}],
         'field3': None,
         'field4': {
             2: {
@@ -137,7 +137,6 @@ def test_serializer_complex_object():
             }
         },
         'field5': 'BLUE',
-        'field6': 'GREEN'
     }
     deserialized = cerealizer.deserialize(serialized, TestClass)
     assert obj == deserialized
