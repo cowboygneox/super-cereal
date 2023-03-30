@@ -20,6 +20,8 @@ jobs:
           poetry-version: "1.3.1"
       - name: Poetry install
         run: poetry install --all-extras
+      - name: Set the version
+        run: poetry version "${{ github.event.release.tag_name }}"
       - name: Publish
         run: |
           poetry publish \
