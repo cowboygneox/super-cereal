@@ -28,7 +28,7 @@ class AvroCerealizer(Cerealizer):
 
     @staticmethod
     def get_schema(record: type) -> Dict[str, any]:
-        def get_schema(t: type, namespace: str) -> Dict[str, any]:
+        def get_schema(t: type, namespace: str) -> Union[Dict[str, any], List[Dict[str, any]]]:
             if t in BUILTIN_ALIASES:
                 return {'type': BUILTIN_ALIASES[t]}
             if t == list or get_origin(t) == list:
@@ -41,7 +41,7 @@ class AvroCerealizer(Cerealizer):
                 return {
                     "type": "enum",
                     "name": t.__name__,
-                    "symbols":  t._member_names_
+                    "symbols": t._member_names_
                 }
             if Union == get_origin(t):
                 args = get_args(t)
@@ -49,17 +49,24 @@ class AvroCerealizer(Cerealizer):
                 def type_for_arg(a):
                     return BUILTIN_ALIASES[a] if a in BUILTIN_ALIASES else get_schema(a, namespace)
 
-                return {'type': [type_for_arg(z) for z in args]}
+                return [{'type': type_for_arg(z)} for z in args]
             if Encrypted == get_origin(t):
-                print('stuff')
+                schemas = get_schema(get_args(t)[0], f'{namespace}.{get_origin(t).__name__}.value')
+
+                if not isinstance(schemas, list):
+                    schemas = [schemas]
+
+                str_schema = get_schema(str, namespace)
+                if str_schema not in schemas:
+                    schemas.append(str_schema)
+
                 return {
                     'namespace': namespace,
                     'type': 'record',
                     'name': get_origin(t).__name__,
                     'fields': [
                         {'name': 'key_id', 'type': 'string'},
-                        {'name': 'value',
-                         'type': [get_schema(get_args(t)[0], f'{namespace}.{get_origin(t).__name__}.value'), 'string']},
+                        {'name': 'value', 'type': schemas},
                         {'name': 'tag', 'type': 'string'},
                         {'name': 'nonce', 'type': 'string'},
                     ]

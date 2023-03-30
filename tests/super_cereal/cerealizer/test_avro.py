@@ -83,6 +83,9 @@ def test_encrypted_obj():
         field1: str
         field2: Encrypted[Secret]
         field3: Encrypted[SuperSecret]
+        field4: Encrypted[str]
+        field5: Encrypted[Optional[str]]
+        field6: Encrypted[Optional[Optional[str]]]
 
     key = get_random_bytes(16)
 
@@ -96,6 +99,18 @@ def test_encrypted_obj():
         Encrypted(
             'key1',
             SuperSecret('another secret')
+        ),
+        Encrypted(
+            'key1',
+            'password11'
+        ),
+        Encrypted(
+            'key1',
+            None
+        ),
+        Encrypted(
+            'key1',
+            'value'
         )
     )
 
