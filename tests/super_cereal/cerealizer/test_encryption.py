@@ -129,3 +129,8 @@ def test_cannot_decrypt_object_due_to_bad_key():
         assert False
     except ValueError as e:
         assert str(e) == 'MAC check failed'
+
+
+def test_encryption_repr():
+    assert str(Encrypted('key', 'this is super secret')) == 'Encrypted(***)'
+    assert repr(Encrypted('key', 'this is super secret')) == 'Encrypted(key_id=key, value=***)'

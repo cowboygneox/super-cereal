@@ -19,6 +19,12 @@ class Encrypted(Generic[E]):
     key_id: str
     value: typing.Optional[E]
 
+    def __str__(self):
+        return 'Encrypted(***)'
+
+    def __repr__(self):
+        return f'Encrypted(key_id={self.key_id}, value=***)'
+
 
 class EncryptedCerealizer(Cerealizer[Encrypted[E], Dict[str, E]]):
 
