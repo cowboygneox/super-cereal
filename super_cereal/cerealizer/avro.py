@@ -45,11 +45,7 @@ class AvroCerealizer(Cerealizer):
                 }
             if Union == get_origin(t):
                 args = get_args(t)
-
-                def type_for_arg(a):
-                    return BUILTIN_ALIASES[a] if a in BUILTIN_ALIASES else get_schema(a, namespace)
-
-                return [{'type': type_for_arg(z)} for z in args]
+                return [get_schema(z, namespace) for z in args]
             if Encrypted == get_origin(t):
                 schemas = get_schema(get_args(t)[0], f'{namespace}.{get_origin(t).__name__}.value')
 
@@ -78,13 +74,9 @@ class AvroCerealizer(Cerealizer):
             f = []
 
             for field in fields:
-                def should_simplify(tp):
-                    return tp in BUILTIN_ALIASES or Union == get_origin(tp)
-
-                schema = get_schema(field[1].annotation, namespace=f'{namespace}.{t.__name__}.{field[0]}')
                 f.append({
                     'name': field[0],
-                    'type': schema['type'] if should_simplify(field[1].annotation) else schema
+                    'type': get_schema(field[1].annotation, namespace=f'{namespace}.{t.__name__}.{field[0]}')
                 })
 
             return {
